@@ -1,0 +1,6 @@
+John Doe
+Email: john.doe@example.com
+Phone: +1-555-0199
+Skills: JavaScript, TypeScript, Node.js, AWS, Docker
+Education: Bachelor of Science in Computer Science, University of California
+Experience: 5 years of experience in full-stack development. Worked at Tech Corp as a Senior Developer.

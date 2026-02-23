@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hackathon Submission</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #0f0f1a;
+            --surface: #1a1a2e;
+            --surface2: #24243e;
+            --accent: #667eea;
+            --accent2: #764ba2;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --text: #e8e8f0;
+            --muted: #8888aa;
+            --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 560px;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .hero h1 {
+            font-size: 36px;
+            font-weight: 800;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .hero p {
+            color: var(--muted);
+            font-size: 15px;
+        }
+
+        .hackathon-info {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+        }
+
+        .hackathon-info h2 {
+            font-size: 20px;
+            margin-bottom: 8px;
+            color: var(--accent);
+        }
+
+        .hackathon-info .deadline {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(243, 156, 18, 0.1);
+            color: var(--warning);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 12px;
+        }
+
+        .form-card {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--surface2);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px 24px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 16px;
+            background: var(--gradient);
+            color: white;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 24px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error {
+            color: var(--danger);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .success-card {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            display: none;
+        }
+
+        .success-card h2 {
+            color: var(--success);
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        .success-card p {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .success-card .checkmark {
+            font-size: 60px;
+            margin-bottom: 16px;
+        }
+
+        .status-check {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: none;
+        }
+
+        .score-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+        }
+
+        .score-bar {
+            flex: 1;
+            height: 6px;
+            background: var(--surface2);
+            border-radius: 3px;
+            margin: 0 12px;
+            overflow: hidden;
+        }
+
+        .score-fill {
+            height: 100%;
+            background: var(--gradient);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 10px;
+            font-size: 14px;
+            z-index: 1000;
+            animation: slideIn 0.3s;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .toast-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .toast-error {
+            background: var(--danger);
+            color: white;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="hero">
+            <h1>🚀 Hackathon Hub</h1>
+            <p>Submit your project for evaluation</p>
+        </div>
+
+        <div class="hackathon-info" id="hackathonInfo" style="display:none;">
+            <h2 id="hackathonTitle"></h2>
+            <p id="hackathonDesc" style="color:var(--muted);font-size:13px;"></p>
+            <div class="deadline" id="hackathonDeadline">⏰ Loading...</div>
+        </div>
+
+        <!-- SUBMISSION FORM -->
+        <div class="form-card" id="formCard">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="name" placeholder="e.g. John Doe" />
+            </div>
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="email" placeholder="e.g. john@example.com" />
+            </div>
+            <div class="form-group">
+                <label>GitHub Repository URL</label>
+                <input type="url" id="githubUrl" placeholder="https://github.com/user/repo" />
+                <div class="error" id="urlError"></div>
+            </div>
+            <button class="btn" onclick="submitProject()" id="submitBtn">Submit Project 🚀</button>
+        </div>
+
+        <!-- SUCCESS -->
+        <div class="success-card" id="successCard">
+            <div class="checkmark">✅</div>
+            <h2>Submission Received!</h2>
+            <p>Your project is being evaluated by our AI agents.<br>Check back soon for your scores.</p>
+        </div>
+
+        <!-- STATUS CHECK -->
+        <div class="status-check" id="statusCard">
+            <h3 style="font-size:16px;margin-bottom:16px;">Evaluation Status</h3>
+            <div id="statusContent"><span class="loader"></span> Evaluating...</div>
+        </div>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const hackathonId = params.get('hackathon');
+        let submissionId = null;
+
+        async function loadHackathonInfo() {
+            if (!hackathonId) return;
+            try {
+                const res = await fetch(`/api/submission/hackathon/${hackathonId}`);
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('hackathonInfo').style.display = 'block';
+                    document.getElementById('hackathonTitle').textContent = data.data.title;
+                    document.getElementById('hackathonDesc').textContent = data.data.description || '';
+                    document.getElementById('hackathonDeadline').textContent = '⏰ Deadline: ' + new Date(data.data.deadline).toLocaleString();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function toast(msg, type = 'success') {
+            const t = document.createElement('div');
+            t.className = `toast toast-${type}`;
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 4000);
+        }
+
+        async function submitProject() {
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const githubUrl = document.getElementById('githubUrl').value.trim();
+            document.getElementById('urlError').textContent = '';
+
+            if (!name || !email || !githubUrl) { toast('All fields are required', 'error'); return; }
+            if (!hackathonId) { toast('No hackathon specified in URL', 'error'); return; }
+
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loader"></span> Submitting...';
+
+            try {
+                const res = await fetch('/api/submission/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hackathonId, name, email, githubUrl }),
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    submissionId = data.data.submissionId;
+                    document.getElementById('formCard').style.display = 'none';
+                    document.getElementById('successCard').style.display = 'block';
+                    document.getElementById('statusCard').style.display = 'block';
+                    pollStatus();
+                } else {
+                    toast(data.error, 'error');
+                    if (data.error?.includes('GitHub')) {
+                        document.getElementById('urlError').textContent = data.error;
+                    }
+                }
+            } catch (error) {
+                toast('Submission failed. Please try again.', 'error');
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = 'Submit Project 🚀';
+        }
+
+        async function pollStatus() {
+            if (!submissionId) return;
+            try {
+                const res = await fetch(`/api/submission/status/${submissionId}`);
+                const data = await res.json();
+                if (data.success && data.data.status === 'evaluated') {
+                    document.getElementById('statusContent').innerHTML = `
+          <div style="text-align:center;padding:20px;">
+            <div style="font-size:48px;margin-bottom:12px;">✅</div>
+            <h3 style="color:var(--success);font-size:20px;margin-bottom:8px;">Evaluation Complete!</h3>
+            <p style="color:var(--muted);font-size:14px;line-height:1.6;">
+              Your submission has been evaluated by our AI agents.<br>
+              The HR team will review your results and get back to you.
+            </p>
+            <div style="margin-top:16px;padding:12px 24px;background:rgba(102,126,234,0.1);border-radius:10px;display:inline-block;">
+              <span style="color:var(--accent);font-size:13px;font-weight:600;">Status: Under HR Review</span>
+            </div>
+          </div>
+        `;
+                    return;
+                }
+                if (data.success && data.data.status === 'error') {
+                    document.getElementById('statusContent').innerHTML = `
+          <div style="text-align:center;padding:20px;">
+            <div style="font-size:48px;margin-bottom:12px;">⚠️</div>
+            <h3 style="color:var(--warning);font-size:20px;margin-bottom:8px;">Evaluation Issue</h3>
+            <p style="color:var(--muted);font-size:14px;">There was an issue evaluating your submission. The HR team has been notified.</p>
+          </div>
+        `;
+                    return;
+                }
+            } catch (e) { console.error(e); }
+            setTimeout(pollStatus, 3000);
+        }
+
+        loadHackathonInfo();
+    </script>
+</body>
+
+</html>

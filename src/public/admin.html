@@ -1,0 +1,1281 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hackathon Admin Panel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0f0f1a;
+      --surface: #1a1a2e;
+      --surface2: #24243e;
+      --accent: #667eea;
+      --accent2: #764ba2;
+      --success: #2ecc71;
+      --danger: #e74c3c;
+      --warning: #f39c12;
+      --text: #e8e8f0;
+      --muted: #8888aa;
+      --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --radius: 12px;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .login-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .login-card {
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 40px;
+      width: 400px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .login-card h1 {
+      text-align: center;
+      font-size: 24px;
+      margin-bottom: 8px;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .login-card p {
+      text-align: center;
+      color: var(--muted);
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: var(--surface2);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      margin-bottom: 16px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: var(--gradient);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+
+    .btn-warning {
+      background: var(--warning);
+      color: white;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-full {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn-sm {
+      padding: 8px 16px;
+      font-size: 12px;
+    }
+
+    .dashboard {
+      display: none;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 32px;
+      background: var(--surface);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .topbar h2 {
+      font-size: 18px;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .main {
+      display: flex;
+      min-height: calc(100vh - 60px);
+    }
+
+    .sidebar {
+      width: 240px;
+      background: var(--surface);
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 20px 0;
+    }
+
+    .sidebar a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 24px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .sidebar a:hover,
+    .sidebar a.active {
+      color: var(--text);
+      background: rgba(102, 126, 234, 0.1);
+      border-right: 3px solid var(--accent);
+    }
+
+    .content {
+      flex: 1;
+      padding: 32px;
+      overflow-y: auto;
+    }
+
+    .content h3 {
+      font-size: 22px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .card h4 {
+      margin-bottom: 12px;
+      font-size: 16px;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--surface2);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+    }
+
+    .stat-card .value {
+      font-size: 32px;
+      font-weight: 800;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .stat-card .label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 13px;
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+    }
+
+    .badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      display: inline-block;
+    }
+
+    .badge-active {
+      background: rgba(46, 204, 113, 0.15);
+      color: var(--success);
+    }
+
+    .badge-pending {
+      background: rgba(243, 156, 18, 0.15);
+      color: var(--warning);
+    }
+
+    .badge-evaluated {
+      background: rgba(102, 126, 234, 0.15);
+      color: var(--accent);
+    }
+
+    .badge-error {
+      background: rgba(231, 76, 60, 0.15);
+      color: var(--danger);
+    }
+
+    .badge-approved {
+      background: rgba(46, 204, 113, 0.15);
+      color: var(--success);
+    }
+
+    .badge-rejected {
+      background: rgba(231, 76, 60, 0.15);
+      color: var(--danger);
+    }
+
+    .badge-pending_review {
+      background: rgba(243, 156, 18, 0.15);
+      color: var(--warning);
+    }
+
+    .badge-STRONGLY_RECOMMEND {
+      background: rgba(46, 204, 113, 0.2);
+      color: #2ecc71;
+    }
+
+    .badge-RECOMMEND {
+      background: rgba(102, 126, 234, 0.2);
+      color: #667eea;
+    }
+
+    .badge-NEEDS_REVIEW {
+      background: rgba(243, 156, 18, 0.2);
+      color: #f39c12;
+    }
+
+    .badge-NOT_RECOMMENDED {
+      background: rgba(231, 76, 60, 0.2);
+      color: #e74c3c;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 16px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      z-index: 1000;
+      animation: slideIn 0.3s;
+      box-shadow: var(--shadow);
+    }
+
+    .toast-success {
+      background: var(--success);
+      color: white;
+    }
+
+    .toast-error {
+      background: var(--danger);
+      color: white;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .section {
+      display: none;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    .score-bar {
+      height: 8px;
+      background: var(--surface2);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .score-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    .loader {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--bg);
+      border-radius: 16px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 28px;
+      background: var(--surface);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 16px 16px 0 0;
+    }
+
+    .modal-header h3 {
+      font-size: 18px;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 24px;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .modal-close:hover {
+      color: var(--text);
+    }
+
+    .modal-body {
+      padding: 28px;
+    }
+
+    .eval-score-big {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .eval-score-big .score {
+      font-size: 64px;
+      font-weight: 800;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1;
+    }
+
+    .eval-score-big .label2 {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .score-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .score-row .sr-label {
+      width: 160px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .score-row .sr-bar {
+      flex: 1;
+    }
+
+    .score-row .sr-val {
+      width: 40px;
+      text-align: right;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .recommendation-box {
+      margin: 24px 0;
+      padding: 20px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .recommendation-box h4 {
+      margin-bottom: 8px;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .recommendation-box .confidence {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .recommendation-box .reasoning {
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text);
+    }
+
+    .feedback-section {
+      margin: 16px 0;
+    }
+
+    .feedback-section summary {
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 12px 0;
+      color: var(--accent);
+    }
+
+    .feedback-section .fb-content {
+      padding: 12px 0;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    .approval-section {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .approval-section h4 {
+      margin-bottom: 12px;
+    }
+
+    .approval-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .approval-status-display {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 8px;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- LOGIN SCREEN -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <h1>Hackathon Hub</h1>
+      <p>Admin Panel &mdash; Sign in to manage hackathons</p>
+      <input type="text" id="loginUsername" placeholder="Username" value="admin" />
+      <input type="password" id="loginPassword" placeholder="Password" value="admin123" />
+      <button class="btn btn-primary btn-full" onclick="login()">Sign In</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="dashboard" id="dashboard">
+    <div class="topbar">
+      <h2>Hackathon Hub &mdash; HR Admin</h2>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:13px;color:var(--muted);" id="welcomeUser"></span>
+        <button class="btn btn-outline" onclick="logout()" style="padding:8px 16px;font-size:12px;">Logout</button>
+      </div>
+    </div>
+    <div class="main">
+      <div class="sidebar">
+        <a onclick="showSection('overview')" class="active" id="nav-overview">Overview</a>
+        <a onclick="showSection('resumes')" id="nav-resumes">Scan Resumes</a>
+        <a onclick="showSection('hackathons')" id="nav-hackathons">Hackathons</a>
+        <a onclick="showSection('candidates')" id="nav-candidates">Candidates</a>
+        <a onclick="showSection('submissions')" id="nav-submissions">Submissions</a>
+        <a onclick="showSection('rankings')" id="nav-rankings">Rankings &amp; Review</a>
+      </div>
+      <div class="content">
+
+        <!-- OVERVIEW -->
+        <div class="section active" id="sec-overview">
+          <h3>Dashboard Overview</h3>
+          <div class="stat-grid" id="statsGrid"></div>
+        </div>
+
+        <!-- SCAN RESUMES -->
+        <div class="section" id="sec-resumes">
+          <h3>Resume Scanner &amp; Repository</h3>
+
+          <div class="card">
+            <h4>1. Upload Resumes</h4>
+            <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">
+              Select individual files or an entire folder containing PDF, DOCX, or TXT resumes.
+            </p>
+            <div class="actions">
+              <div style="position:relative;">
+                <button class="btn btn-outline" id="uploadFilesBtn"
+                  onclick="document.getElementById('fileInput').click()">
+                  <span>&#128196;</span> Select Files
+                </button>
+                <input type="file" id="fileInput" multiple accept=".pdf,.docx,.txt" style="display:none"
+                  onchange="handleFileUpload(this)">
+              </div>
+              <div style="position:relative;">
+                <button class="btn btn-outline" id="uploadFolderBtn"
+                  onclick="document.getElementById('folderInput').click()">
+                  <span>&#128194;</span> Select Folder
+                </button>
+                <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none"
+                  onchange="handleFileUpload(this, true)">
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h4>2. Current Repository (./resumes/)</h4>
+            <div id="resumeFilesList" style="margin-top:16px; max-height: 300px; overflow-y: auto;">
+              <span class="loader"></span> Loading repository...
+            </div>
+          </div>
+
+          <div class="card">
+            <h4>3. Extraction &amp; Database Sync</h4>
+            <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">
+              Process all files in the repository to extract candidate information and update the database.
+            </p>
+            <button class="btn btn-primary" onclick="scanResumes()" id="scanBtn">
+              <span>&#128269;</span> Run Full Scan
+            </button>
+            <div id="scanResults" style="margin-top:20px;"></div>
+          </div>
+        </div>
+
+        <!-- HACKATHONS -->
+        <div class="section" id="sec-hackathons">
+          <h3>Hackathon Management</h3>
+          <div class="card">
+            <h4>Create New Hackathon</h4>
+            <div class="form-group"><label>Hackathon Title (set by HR)</label><input type="text" id="hackTitle"
+                placeholder="e.g. AI Innovation Challenge 2026" /></div>
+            <div class="form-group"><label>Description (Problem Statement)</label><textarea id="hackDesc" rows="3"
+                placeholder="Describe the hackathon problem statement in detail. This will be used to check if submissions align with the topic."></textarea>
+            </div>
+            <div class="form-group"><label>Submission Deadline</label><input type="datetime-local" id="hackDeadline" />
+            </div>
+            <button class="btn btn-primary" onclick="createHackathon()">Create Hackathon</button>
+          </div>
+          <div class="card">
+            <h4>Active Hackathons</h4>
+            <div id="hackathonsList"></div>
+          </div>
+        </div>
+
+        <!-- CANDIDATES -->
+        <div class="section" id="sec-candidates">
+          <h3>Extracted Candidates</h3>
+          <div class="card">
+            <div id="candidatesList"></div>
+          </div>
+        </div>
+
+        <!-- SUBMISSIONS -->
+        <div class="section" id="sec-submissions">
+          <h3>Submissions</h3>
+          <div class="form-group">
+            <label>Select Hackathon</label>
+            <select id="subHackathonSelect" onchange="loadSubmissions()">
+              <option value="">-- Select --</option>
+            </select>
+          </div>
+          <div class="actions" style="margin-bottom:20px;">
+            <button class="btn btn-success" onclick="evaluateAll()">Evaluate All Pending</button>
+          </div>
+          <div class="card">
+            <div id="submissionsList"></div>
+          </div>
+        </div>
+
+        <!-- RANKINGS & REVIEW -->
+        <div class="section" id="sec-rankings">
+          <h3>Leaderboard &mdash; AI Evaluation + HR Review</h3>
+          <p style="color:var(--muted);font-size:13px;margin-bottom:20px;">Review AI evaluations with detailed
+            reasoning, alignment analysis, and confidence scores. Approve or reject candidates.</p>
+          <div class="form-group">
+            <label>Select Hackathon</label>
+            <select id="rankHackathonSelect" onchange="loadRankings()">
+              <option value="">-- Select --</option>
+            </select>
+          </div>
+          <div class="actions" style="margin-bottom:20px;">
+            <button class="btn btn-warning btn-sm" onclick="regenerateRecs()">Regenerate AI Recommendations</button>
+            <button class="btn btn-danger btn-sm" onclick="reEvaluateAll()">Re-Evaluate All (with Alignment
+              Check)</button>
+          </div>
+          <div class="card">
+            <div id="rankingsList"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- EVALUATION DETAIL MODAL -->
+  <div class="modal-overlay" id="evalModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="evalModalTitle">Evaluation Detail</h3>
+        <button class="modal-close" onclick="closeEvalModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="evalModalBody">Loading...</div>
+    </div>
+  </div>
+
+  <script>
+    let authToken = '';
+    const API = '/api/admin';
+
+    async function api(url, options = {}) {
+      try {
+        const res = await fetch(url, {
+          ...options,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+            ...options.headers
+          },
+          credentials: 'include'
+        });
+
+        const contentType = res.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await res.json();
+          if (!res.ok && !data.error) data.error = `Server error: ${res.status}`;
+          return data;
+        } else {
+          const text = await res.text();
+          if (!res.ok) return { success: false, error: `Error ${res.status}: ${text.substring(0, 100)}` };
+          return { success: true, data: text };
+        }
+      } catch (err) {
+        return { success: false, error: `Network error: ${err.message}` };
+      }
+    }
+
+    function toast(msg, type = 'success') {
+      const t = document.createElement('div');
+      t.className = `toast toast-${type}`;
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3500);
+    }
+
+    function getScoreColor(score) {
+      if (score >= 70) return 'var(--success)';
+      if (score >= 50) return 'var(--warning)';
+      return 'var(--danger)';
+    }
+
+    function getScoreGradient(score) {
+      if (score >= 70) return 'linear-gradient(90deg, #2ecc71, #27ae60)';
+      if (score >= 50) return 'linear-gradient(90deg, #f39c12, #e67e22)';
+      return 'linear-gradient(90deg, #e74c3c, #c0392b)';
+    }
+
+    function getRecLabel(rec) {
+      return {
+        'STRONGLY_RECOMMEND': 'Strongly Recommend',
+        'RECOMMEND': 'Recommend',
+        'NEEDS_REVIEW': 'Needs Review',
+        'NOT_RECOMMENDED': 'Not Recommended',
+        'pending': 'Pending'
+      }[rec] || rec;
+    }
+
+    // AUTH
+    async function login() {
+      const u = document.getElementById('loginUsername').value;
+      const p = document.getElementById('loginPassword').value;
+      const res = await api(`${API}/login`, { method: 'POST', body: JSON.stringify({ username: u, password: p }) });
+      if (res.success) {
+        authToken = res.data.token;
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        document.getElementById('welcomeUser').textContent = `Hello, ${res.data.user.username}`;
+        loadOverview();
+      } else { toast(res.error || 'Login failed', 'error'); }
+    }
+
+    function logout() {
+      authToken = '';
+      document.getElementById('loginScreen').style.display = 'flex';
+      document.getElementById('dashboard').style.display = 'none';
+    }
+
+    function showSection(name) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+      document.getElementById(`sec-${name}`).classList.add('active');
+      document.getElementById(`nav-${name}`).classList.add('active');
+      if (name === 'resumes') loadResumeFiles();
+      if (name === 'hackathons') loadHackathons();
+      if (name === 'candidates') loadCandidates();
+      if (name === 'submissions') { populateHackathonSelects(); }
+      if (name === 'rankings') { populateHackathonSelects(); }
+      if (name === 'overview') loadOverview();
+    }
+
+    // OVERVIEW
+    async function loadOverview() {
+      const [cands, hacks] = await Promise.all([api(`${API}/candidates`), api(`${API}/hackathons`)]);
+      const cc = cands.success ? cands.data.length : 0;
+      const hc = hacks.success ? hacks.data.length : 0;
+      document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="value">${cc}</div><div class="label">Candidates Extracted</div></div>
+      <div class="stat-card"><div class="value">${hc}</div><div class="label">Hackathons</div></div>
+      <div class="stat-card"><div class="value">6</div><div class="label">AI Evaluators</div></div>
+      <div class="stat-card"><div class="value">&infin;</div><div class="label">Scalability</div></div>`;
+    }
+
+    // RESUME REPOSITORY
+    async function loadResumeFiles() {
+      const res = await api(`${API}/resume-files`);
+      if (!res.success) return;
+      const el = document.getElementById('resumeFilesList');
+      if (res.data.length === 0) {
+        el.innerHTML = '<p style="color:var(--muted);font-size:13px;">No files in repository. Upload some above or place them in ./resumes/.</p>';
+        return;
+      }
+      el.innerHTML = `<table><thead><tr><th>Filename</th><th>Type</th><th>Actions</th></tr></thead>
+      <tbody>${res.data.map(f => {
+        const escaped = f.replace(/\\/g, '\\\\');
+        return `<tr>
+        <td><code>${f}</code></td>
+        <td><span class="badge badge-evaluated">${f.split('.').pop().toUpperCase()}</span></td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteResumeFile('${escaped}')" style="padding:4px 8px;font-size:10px;">Delete</button></td>
+      </tr>`}).join('')}</tbody></table>`;
+    }
+
+    async function deleteResumeFile(filename) {
+      if (!confirm(`Delete ${filename}?`)) return;
+      const res = await api(`${API}/resume-file?filename=${encodeURIComponent(filename)}`, { method: 'DELETE' });
+      if (res.success) { toast('File deleted'); loadResumeFiles(); }
+      else { toast(res.error, 'error'); }
+    }
+
+    async function handleFileUpload(input, isFolder = false) {
+      const files = input.files;
+      if (!files.length) return;
+
+      const btn = isFolder ? document.getElementById('uploadFolderBtn') : document.getElementById('uploadFilesBtn');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loader"></span> Uploading...';
+
+      let done = 0;
+      let skipped = 0;
+      let failed = 0;
+      const supportedExts = ['pdf', 'docx', 'doc', 'txt'];
+
+      let lastError = '';
+      for (const file of files) {
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!supportedExts.includes(ext)) {
+          skipped++;
+          continue;
+        }
+
+        try {
+          const content = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result.split(',')[1]);
+            reader.onerror = (e) => reject(new Error('File read failed'));
+            reader.readAsDataURL(file);
+          });
+
+          const filename = (isFolder && file.webkitRelativePath) ? file.webkitRelativePath : file.name;
+
+          const res = await api(`${API}/upload-resume`, {
+            method: 'POST',
+            body: JSON.stringify({ filename, content })
+          });
+
+          if (res.success) {
+            done++;
+          } else {
+            lastError = res.error;
+            console.error(`Server failed to save ${file.name}: ${res.error}`);
+            failed++;
+          }
+        } catch (err) {
+          lastError = err.message;
+          console.error(`Failed to process ${file.name}`, err);
+          failed++;
+        }
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+
+      if (failed > 0) {
+        toast(`Upload failed: ${lastError || 'Unknown error'}`, 'error');
+      } else if (done > 0) {
+        toast(`Successfully uploaded ${done} files!`);
+      } else if (skipped > 0) {
+        toast(`No supported files found (.pdf, .docx, .txt required)`, 'error');
+      }
+
+      loadResumeFiles();
+      input.value = ''; // Reset input
+    }
+
+    // RESUME SCAN
+    async function scanResumes() {
+      document.getElementById('scanBtn').disabled = true;
+      document.getElementById('scanBtn').innerHTML = '<span class="loader"></span> Scanning Repository...';
+      const res = await api(`${API}/scan-resumes`, { method: 'POST' });
+      document.getElementById('scanBtn').disabled = false;
+      document.getElementById('scanBtn').innerHTML = '<span>&#128269;</span> Run Full Scan';
+      if (res.success) {
+        const d = res.data;
+        toast(`Scanned ${d.processed} resumes successfully!`);
+        loadResumeFiles();
+        loadCandidates();
+        document.getElementById('scanResults').innerHTML = `
+        <div class="stat-grid">
+          <div class="stat-card"><div class="value">${d.totalFiles}</div><div class="label">Total Files</div></div>
+          <div class="stat-card"><div class="value">${d.processed}</div><div class="label">Processed</div></div>
+          <div class="stat-card"><div class="value">${d.duplicatesSkipped}</div><div class="label">Duplicates Skipped</div></div>
+          <div class="stat-card"><div class="value">${d.errors}</div><div class="label">Errors</div></div>
+        </div>
+        <table><thead><tr><th>Name</th><th>Email</th><th>Phone</th></tr></thead>
+        <tbody>${d.candidates.map(c => `<tr><td>${c.name}</td><td>${c.email}</td><td>${c.phone}</td></tr>`).join('')}</tbody></table>`;
+      } else { toast(res.error, 'error'); }
+    }
+
+    // HACKATHON MANAGEMENT
+    async function createHackathon() {
+      const title = document.getElementById('hackTitle').value;
+      const description = document.getElementById('hackDesc').value;
+      const deadline = document.getElementById('hackDeadline').value;
+      if (!title || !deadline) { toast('Title and deadline required', 'error'); return; }
+      const res = await api(`${API}/hackathons`, { method: 'POST', body: JSON.stringify({ title, description, deadline }) });
+      if (res.success) { toast('Hackathon created!'); loadHackathons(); } else { toast(res.error, 'error'); }
+    }
+
+    async function loadHackathons() {
+      const res = await api(`${API}/hackathons`);
+      if (!res.success) return;
+      const el = document.getElementById('hackathonsList');
+      if (res.data.length === 0) { el.innerHTML = '<p style="color:var(--muted)">No hackathons yet.</p>'; return; }
+      el.innerHTML = `<table><thead><tr><th>Title</th><th>Deadline</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${res.data.map(h => `<tr>
+      <td><strong>${h.title}</strong></td>
+      <td>${new Date(h.deadline).toLocaleString()}</td>
+      <td><span class="badge badge-${h.status}">${h.status}</span></td>
+      <td><button class="btn btn-success btn-sm" onclick="sendInvitations('${h.id}')">Send Invitations</button></td>
+    </tr>`).join('')}</tbody></table>`;
+    }
+
+    async function sendInvitations(hackathonId) {
+      if (!confirm('Send invitation emails to all candidates?')) return;
+      const res = await api(`${API}/hackathons/${hackathonId}/send-invitations`, { method: 'POST' });
+      if (res.success) { toast(`Sent: ${res.data.sent}, Failed: ${res.data.failed}`); }
+      else { toast(res.error, 'error'); }
+    }
+
+    // CANDIDATES
+    async function loadCandidates() {
+      const res = await api(`${API}/candidates`);
+      if (!res.success) return;
+      const el = document.getElementById('candidatesList');
+      if (res.data.length === 0) { el.innerHTML = '<p style="color:var(--muted)">No candidates yet. Scan resumes first.</p>'; return; }
+      el.innerHTML = `<table><thead><tr><th>File</th><th>Name</th><th>Email</th><th>Phone</th><th>Skills</th></tr></thead>
+    <tbody>${res.data.map(c => `<tr><td>${c.file_name}</td><td>${c.name}</td><td>${c.email}</td><td>${c.phone}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">${c.skills}</td></tr>`).join('')}</tbody></table>`;
+    }
+
+    async function populateHackathonSelects() {
+      const res = await api(`${API}/hackathons`);
+      if (!res.success) return;
+      const opts = res.data.map(h => `<option value="${h.id}">${h.title}</option>`).join('');
+      document.getElementById('subHackathonSelect').innerHTML = '<option value="">-- Select --</option>' + opts;
+      document.getElementById('rankHackathonSelect').innerHTML = '<option value="">-- Select --</option>' + opts;
+    }
+
+    // SUBMISSIONS
+    async function loadSubmissions() {
+      const hid = document.getElementById('subHackathonSelect').value;
+      if (!hid) return;
+      const res = await api(`${API}/hackathons/${hid}/submissions`);
+      if (!res.success) return;
+      const el = document.getElementById('submissionsList');
+      if (res.data.length === 0) { el.innerHTML = '<p style="color:var(--muted)">No submissions yet.</p>'; return; }
+      el.innerHTML = `<table><thead><tr><th>Candidate</th><th>Email</th><th>Repo</th><th>Status</th><th>Score</th></tr></thead>
+    <tbody>${res.data.map(s => `<tr>
+      <td>${s.candidate_name}</td><td>${s.candidate_email}</td>
+      <td><a href="${s.github_repo_url}" target="_blank" style="color:var(--accent);">${s.github_repo_url.split('/').slice(-2).join('/')}</a></td>
+      <td><span class="badge badge-${s.status}">${s.status}</span></td>
+      <td>${s.overall_score != null ? `<strong>${s.overall_score}</strong>/100` : '&mdash;'}</td>
+    </tr>`).join('')}</tbody></table>`;
+    }
+
+    async function evaluateAll() {
+      const hid = document.getElementById('subHackathonSelect').value;
+      if (!hid) { toast('Select a hackathon first', 'error'); return; }
+      toast('Evaluating submissions...');
+      const res = await api(`${API}/hackathons/${hid}/evaluate-all`, { method: 'POST' });
+      if (res.success) { toast(`Evaluated: ${res.data.evaluated}, Errors: ${res.data.errors}`); loadSubmissions(); }
+      else { toast(res.error, 'error'); }
+    }
+
+    // REGENERATE RECOMMENDATIONS
+    async function regenerateRecs() {
+      const hid = document.getElementById('rankHackathonSelect').value;
+      if (!hid) { toast('Select a hackathon first', 'error'); return; }
+      toast('Regenerating AI recommendations...');
+      const res = await api(`${API}/hackathons/${hid}/regenerate-recommendations`, { method: 'POST' });
+      if (res.success) { toast(res.message); loadRankings(); }
+      else { toast(res.error, 'error'); }
+    }
+
+    // RE-EVALUATE ALL (with alignment)
+    async function reEvaluateAll() {
+      const hid = document.getElementById('rankHackathonSelect').value;
+      if (!hid) { toast('Select a hackathon first', 'error'); return; }
+      if (!confirm('Re-evaluate ALL submissions with alignment checking? This will re-clone repos and recalculate all scores.')) return;
+      toast('Re-evaluating all submissions with alignment check...');
+      const rankRes = await api(`${API}/hackathons/${hid}/rankings`);
+      if (!rankRes.success || rankRes.data.length === 0) { toast('No evaluations to re-evaluate', 'error'); return; }
+      let done = 0, errors = 0;
+      for (const ev of rankRes.data) {
+        try {
+          const res = await api(`${API}/evaluations/${ev.id}/re-evaluate`, { method: 'POST' });
+          if (res.success) done++; else errors++;
+        } catch { errors++; }
+      }
+      toast(`Re-evaluated: ${done}, Errors: ${errors}`);
+      loadRankings();
+    }
+
+    // RE-EVALUATE SINGLE
+    async function reEvaluateOne(evalId) {
+      if (!confirm('Re-evaluate this submission with alignment checking against the hackathon problem statement?')) return;
+      toast('Re-evaluating...');
+      const res = await api(`${API}/evaluations/${evalId}/re-evaluate`, { method: 'POST' });
+      if (res.success) {
+        toast(`Re-evaluation complete! New score: ${res.data.score}/100`);
+        loadRankings();
+      } else { toast(res.error, 'error'); }
+    }
+
+    // RANKINGS WITH ALIGNMENT ALERTS
+    async function loadRankings() {
+      const hid = document.getElementById('rankHackathonSelect').value;
+      if (!hid) return;
+      const res = await api(`${API}/hackathons/${hid}/rankings`);
+      if (!res.success) return;
+      const el = document.getElementById('rankingsList');
+      if (res.data.length === 0) { el.innerHTML = '<p style="color:var(--muted)">No evaluations yet.</p>'; return; }
+
+      el.innerHTML = `<table><thead><tr>
+      <th>#</th><th>Candidate</th><th>Overall</th><th>AI Recommendation</th><th>Confidence</th><th>HR Status</th><th>Actions</th>
+    </tr></thead>
+    <tbody>${res.data.map((r, i) => {
+        let fb = {};
+        try { fb = JSON.parse(r.feedback_json || '{}'); } catch { }
+        const hasAlert = fb.isAligned === false || fb.mismatchAlert;
+        const alertIcon = hasAlert ? '<span title="Alignment mismatch" style="color:var(--danger);cursor:help;">&#9888;</span> ' : '';
+
+        return `<tr style="${hasAlert ? 'background:rgba(231,76,60,0.05);' : ''}">
+      <td><strong>${i + 1}</strong></td>
+      <td>
+        ${alertIcon}<strong>${r.candidate_name || r.candidate_email}</strong><br>
+        <span style="font-size:11px;color:var(--muted);">${r.candidate_email}</span>
+        ${hasAlert ? '<br><span style="font-size:10px;color:var(--danger);font-weight:600;">PROJECT MISMATCH</span>' : ''}
+      </td>
+      <td><strong style="color:${getScoreColor(r.overall_score)};font-size:18px;">${r.overall_score}</strong><span style="color:var(--muted);font-size:11px;">/100</span></td>
+      <td><span class="badge badge-${r.ai_recommendation || 'pending'}">${getRecLabel(r.ai_recommendation)}</span></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="width:50px;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;">
+            <div style="width:${r.confidence_level || 0}%;height:100%;background:${getScoreGradient(r.confidence_level || 0)};border-radius:3px;"></div>
+          </div>
+          <span style="font-size:12px;font-weight:600;">${r.confidence_level || 0}%</span>
+        </div>
+      </td>
+      <td><span class="badge badge-${r.approval_status || 'pending_review'}">${(r.approval_status || 'pending_review').replace('_', ' ')}</span></td>
+      <td>
+        <button class="btn btn-primary btn-sm" onclick="openEvalDetail('${r.id}')" style="margin-bottom:4px;">Review</button><br>
+        <button class="btn btn-outline btn-sm" onclick="reEvaluateOne('${r.id}')" style="padding:4px 8px;font-size:10px;">Re-eval</button>
+      </td>
+    </tr>`;
+      }).join('')}</tbody></table>`;
+    }
+
+    // EVALUATION DETAIL MODAL
+    async function openEvalDetail(evalId) {
+      const modal = document.getElementById('evalModal');
+      const body = document.getElementById('evalModalBody');
+      modal.classList.add('active');
+      body.innerHTML = '<div style="text-align:center;padding:40px;"><span class="loader"></span> Loading evaluation...</div>';
+
+      const res = await api(`${API}/evaluations/${evalId}`);
+      if (!res.success) { body.innerHTML = `<p style="color:var(--danger)">Error: ${res.error}</p>`; return; }
+
+      const e = res.data;
+      const fb = e.feedback || {};
+
+      document.getElementById('evalModalTitle').textContent = `Evaluation - ${e.candidate_name || e.candidate_email}`;
+
+      const alignmentBanner = (fb.isAligned === false || fb.mismatchAlert)
+        ? `<div style="background:rgba(231,76,60,0.12);border:1px solid rgba(231,76,60,0.3);border-radius:12px;padding:16px;margin-bottom:20px;">
+             <h4 style="color:var(--danger);margin-bottom:8px;">&#9888; PROJECT ALIGNMENT MISMATCH</h4>
+             <p style="color:var(--text);font-size:13px;line-height:1.6;">${fb.mismatchAlert || 'This project may not align with the hackathon problem statement.'}</p>
+             ${fb.alignmentScore !== undefined ? `<p style="color:var(--muted);font-size:12px;margin-top:8px;">Alignment Score: <strong style="color:var(--danger);">${fb.alignmentScore}/100</strong></p>` : ''}
+           </div>` : '';
+
+      const approvalHTML = (e.approval_status === 'approved' || e.approval_status === 'rejected')
+        ? `<div class="approval-status-display" style="background:${e.approval_status === 'approved' ? 'rgba(46,204,113,0.1)' : 'rgba(231,76,60,0.1)'};">
+             <span style="font-size:20px;">${e.approval_status === 'approved' ? '&#10004;' : '&#10008;'}</span>
+             <strong style="color:${e.approval_status === 'approved' ? 'var(--success)' : 'var(--danger)'};">${e.approval_status.toUpperCase()}</strong>
+             ${e.approved_by ? `<p style="color:var(--muted);font-size:12px;margin-top:4px;">by ${e.approved_by} on ${new Date(e.approved_at).toLocaleString()}</p>` : ''}
+             ${e.hr_notes ? `<p style="color:var(--muted);font-size:12px;margin-top:4px;">Notes: ${e.hr_notes}</p>` : ''}
+           </div>`
+        : `<div class="form-group"><label>HR Notes (optional)</label><textarea id="hrNotes" rows="2" placeholder="Add your notes here..."></textarea></div>
+           <div class="approval-actions">
+             <button class="btn btn-success" onclick="approveCandidate('${e.id}', 'approved')">Approve Candidate</button>
+             <button class="btn btn-danger" onclick="approveCandidate('${e.id}', 'rejected')">Reject Candidate</button>
+             <button class="btn btn-outline btn-sm" onclick="reEvaluateOne('${e.id}'); closeEvalModal();" style="margin-left:auto;">Re-Evaluate</button>
+           </div>`;
+
+      body.innerHTML = `
+      ${alignmentBanner}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div>
+          <strong style="font-size:16px;">${e.candidate_name || 'Unknown'}</strong><br>
+          <span style="color:var(--muted);font-size:13px;">${e.candidate_email}</span><br>
+          <a href="${e.github_repo_url}" target="_blank" style="color:var(--accent);font-size:13px;">${e.github_repo_url}</a>
+        </div>
+        <div style="text-align:right;">
+          <span style="color:var(--muted);font-size:11px;">Submitted</span><br>
+          <span style="font-size:13px;">${new Date(e.submitted_at).toLocaleString()}</span>
+        </div>
+      </div>
+      <div class="eval-score-big">
+        <div class="score">${e.overall_score}</div>
+        <div class="label2">Overall Score out of 100</div>
+      </div>
+      <div style="margin-bottom:24px;">
+        <h4 style="font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Score Breakdown</h4>
+        ${[
+          { label: 'Code Quality (20%)', score: e.code_quality_score },
+          { label: 'README Clarity (10%)', score: e.readme_clarity_score },
+          { label: 'Project Structure (10%)', score: e.project_structure_score },
+          { label: 'Innovation (15%)', score: e.innovation_score },
+          { label: 'Technical (20%)', score: e.technical_score },
+          { label: 'Alignment (25%)', score: fb.alignmentScore ?? 'N/A' },
+        ].map(s => {
+          const numScore = typeof s.score === 'number' ? s.score : 0;
+          return `<div class="score-row">
+            <div class="sr-label">${s.label}</div>
+            <div class="sr-bar"><div class="score-bar"><div class="score-fill" style="width:${numScore}%;background:${getScoreGradient(numScore)};"></div></div></div>
+            <div class="sr-val" style="color:${getScoreColor(numScore)}">${s.score}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="recommendation-box" style="background:${e.ai_recommendation === 'STRONGLY_RECOMMEND' ? 'rgba(46,204,113,0.08)' :
+          e.ai_recommendation === 'RECOMMEND' ? 'rgba(102,126,234,0.08)' :
+            e.ai_recommendation === 'NEEDS_REVIEW' ? 'rgba(243,156,18,0.08)' :
+              'rgba(231,76,60,0.08)'};">
+        <h4>AI Recommendation: <span class="badge badge-${e.ai_recommendation || 'pending'}">${getRecLabel(e.ai_recommendation)}</span></h4>
+        <div class="confidence">Confidence Level: <strong>${e.confidence_level || 0}%</strong></div>
+        <div class="reasoning">${fb.reasoning || 'No detailed reasoning available. Click "Regenerate AI Recommendations" to generate.'}</div>
+      </div>
+      <div style="margin-top:24px;">
+        <h4 style="font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Detailed Feedback by Category</h4>
+        ${fb.alignment ? `<details class="feedback-section" open><summary>Problem Statement Alignment</summary><div class="fb-content">${fb.alignment}</div></details>` : ''}
+        <details class="feedback-section"><summary>Code Quality Analysis</summary><div class="fb-content">${fb.codeQuality || 'N/A'}</div></details>
+        <details class="feedback-section"><summary>README Clarity Analysis</summary><div class="fb-content">${fb.readmeClarity || 'N/A'}</div></details>
+        <details class="feedback-section"><summary>Project Structure Analysis</summary><div class="fb-content">${fb.projectStructure || 'N/A'}</div></details>
+        <details class="feedback-section"><summary>Innovation Analysis</summary><div class="fb-content">${fb.innovation || 'N/A'}</div></details>
+        <details class="feedback-section"><summary>Technical Implementation Analysis</summary><div class="fb-content">${fb.technical || 'N/A'}</div></details>
+      </div>
+      <div class="approval-section">
+        <h4>HR Decision</h4>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:12px;">Review the AI analysis above, then approve or reject this candidate.</p>
+        ${approvalHTML}
+      </div>`;
+    }
+
+    async function approveCandidate(evalId, action) {
+      const actionLabel = action === 'approved' ? 'approve' : 'reject';
+      if (!confirm(`Are you sure you want to ${actionLabel} this candidate?`)) return;
+      const notes = document.getElementById('hrNotes')?.value || '';
+      const res = await api(`${API}/evaluations/${evalId}/approve`, { method: 'POST', body: JSON.stringify({ action, notes }) });
+      if (res.success) {
+        toast(`Candidate ${action} successfully!`);
+        openEvalDetail(evalId);
+        loadRankings();
+      } else { toast(res.error, 'error'); }
+    }
+
+    function closeEvalModal() {
+      document.getElementById('evalModal').classList.remove('active');
+    }
+
+    document.getElementById('evalModal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeEvalModal();
+    });
+  </script>
+</body>
+
+</html>

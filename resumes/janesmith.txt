@@ -1,0 +1,10 @@
+Jane Smith
+jane.smith@email.io
+(555) 123-4567
+Summary: Software Engineer with focus on frontend.
+Skills: React, Vue, HTML, CSS, Figma
+Education: Master of Science in Software Engineering, MIT
+Professional History: 
+Software Engineer at Frontend Inc (2020-2023)
+Junior Developer at Web Solutions (2018-2020)
+Experience: 7+ years of experience in the industry.
