@@ -310,10 +310,28 @@ router.get('/test-smtp', async (_req, res) => {
         const emailService = new EmailService();
         const ok = await emailService.verifyConnection();
         if (ok) {
-            res.json({ success: true, message: 'SMTP connection verified! Emails will be delivered.' });
+            res.json({ success: true, message: 'Email provider ready.' });
         } else {
             res.json({ success: false, error: `SMTP connection failed. Config: host=${config.smtp.host}, port=${config.smtp.port}, user=${config.smtp.user}` });
         }
+    } catch (error: any) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ─── Invitation Preview (manual fallback) ──────────────────────
+router.get('/hackathons/:id/invitation-preview', authMiddleware, async (req, res) => {
+    try {
+        const hackathonId = String(req.params['id']);
+        const db = getDatabase();
+        const hackathon = db.prepare('SELECT * FROM hackathons WHERE id = ?').get(hackathonId) as any;
+        if (!hackathon) { res.status(404).json({ success: false, error: 'Hackathon not found' }); return; }
+
+        const candidates = db.prepare('SELECT DISTINCT email, name FROM candidates WHERE email != ?').all('N/A') as Array<{ email: string; name: string }>;
+        const submissionUrl = `${config.appUrl}/submit?hackathon=${hackathonId}`;
+        const emailBody = `Hi [Candidate Name],\n\nYou are invited to participate in: ${hackathon.title}\n\n${hackathon.description ? hackathon.description + '\n\n' : ''}Deadline: ${new Date(hackathon.deadline).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })}\n\nSubmit your project here:\n${submissionUrl}\n\nGood luck!\n— Vanguard HR Team`;
+
+        res.json({ success: true, data: { hackathonTitle: hackathon.title, candidates, emailBody, submissionUrl } });
     } catch (error: any) {
         res.status(500).json({ success: false, error: error.message });
     }

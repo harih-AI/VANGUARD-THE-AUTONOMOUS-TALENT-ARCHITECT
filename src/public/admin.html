@@ -1036,8 +1036,52 @@
     async function sendInvitations(hackathonId) {
       if (!confirm('Send invitation emails to all candidates?')) return;
       const res = await api(`${API}/hackathons/${hackathonId}/send-invitations`, { method: 'POST' });
-      if (res.success) { toast(`Sent: ${res.data.sent}, Failed: ${res.data.failed}`); }
-      else { toast(res.error, 'error'); }
+      if (res.success && res.data.sent > 0) {
+        toast(`✅ Sent: ${res.data.sent} emails, Failed: ${res.data.failed}`);
+      } else {
+        // Show preview modal so admin can copy & send manually
+        const preview = await api(`${API}/hackathons/${hackathonId}/invitation-preview`);
+        if (preview.success) {
+          showInvitationPreview(preview.data);
+        } else {
+          toast(res.error || 'Email delivery failed. Check server logs.', 'error');
+        }
+      }
+    }
+
+    function showInvitationPreview(data) {
+      const recipientList = data.candidates.map(c => `${c.name} <${c.email}>`).join(', ');
+      const modal = document.createElement('div');
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+      modal.innerHTML = `
+        <div style="background:var(--surface);border-radius:16px;padding:30px;max-width:700px;width:100%;max-height:80vh;overflow-y:auto;">
+          <h3 style="color:var(--accent);margin-top:0;">📧 Invitation Preview — Send Manually</h3>
+          <p style="color:var(--muted);font-size:13px;">Email delivery requires a verified domain. Copy the details below and send from Gmail directly.</p>
+          <div style="margin-bottom:16px;">
+            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">TO (copy all recipients):</label>
+            <div style="background:var(--bg);padding:10px;border-radius:8px;font-family:monospace;font-size:12px;cursor:pointer;border:1px solid var(--border);" onclick="navigator.clipboard.writeText('${recipientList}');this.style.color='#4afa9a';" title="Click to copy">
+              ${recipientList}
+            </div>
+          </div>
+          <div style="margin-bottom:16px;">
+            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">SUBJECT:</label>
+            <div style="background:var(--bg);padding:10px;border-radius:8px;font-size:13px;cursor:pointer;border:1px solid var(--border);" onclick="navigator.clipboard.writeText(this.innerText);this.style.color='#4afa9a';" title="Click to copy">
+              🚀 Hackathon Invitation: ${data.hackathonTitle}
+            </div>
+          </div>
+          <div style="margin-bottom:20px;">
+            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">BODY (click to copy):</label>
+            <div style="background:var(--bg);padding:10px;border-radius:8px;font-size:12px;white-space:pre-wrap;cursor:pointer;border:1px solid var(--border);max-height:200px;overflow-y:auto;" onclick="navigator.clipboard.writeText(this.innerText);this.style.color='#4afa9a';" title="Click to copy">${data.emailBody}</div>
+          </div>
+          <div style="display:flex;gap:12px;justify-content:flex-end;">
+            <a href="https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(recipientList)}&su=${encodeURIComponent('🚀 Hackathon Invitation: ' + data.hackathonTitle)}" target="_blank"
+               style="background:var(--accent);color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:14px;">
+              Open in Gmail →
+            </a>
+            <button onclick="this.closest('div[style*=fixed]').remove()" style="padding:10px 20px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;">Close</button>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
     }
 
     // CANDIDATES
