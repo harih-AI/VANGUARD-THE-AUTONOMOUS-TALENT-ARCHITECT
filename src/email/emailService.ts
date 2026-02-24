@@ -64,7 +64,7 @@ export class EmailService {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        from: config.resendApiKey ? (config.smtp.from.includes('<') ? config.smtp.from : `Vanguard HR <onboarding@resend.dev>`) : config.smtp.from,
+                        from: 'Vanguard HR <onboarding@resend.dev>',
                         to: payload.to,
                         subject: payload.subject,
                         html: payload.html,
