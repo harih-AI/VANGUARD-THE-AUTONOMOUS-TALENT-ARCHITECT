@@ -11,25 +11,81 @@ export class EmailService {
             host: config.smtp.host,
             port: config.smtp.port,
             secure: config.smtp.secure,
+            family: 4,
+            pool: true,
+            maxConnections: 5,
+            maxMessages: 100,
             auth: {
                 user: config.smtp.user,
                 pass: config.smtp.pass,
             },
-            connectionTimeout: 5000, // 5 seconds is enough to know it failed on Railway
-        });
+            // Extremely generous timeouts for slow cloud handshakes
+            connectionTimeout: 30000,
+            greetingTimeout: 20000,
+            socketTimeout: 60000,
+            tls: {
+                rejectUnauthorized: false,
+                minVersion: 'TLSv1.2',
+                servername: config.smtp.host
+            }
+        } as any);
+
+        logger.info(`EmailService initialized: ${config.smtp.host}:${config.smtp.port} (secure: ${config.smtp.secure}, IPv4)`);
     }
 
     async verifyConnection(): Promise<boolean> {
+        // If Resend is configured, we consider the service "ready" immediately.
+        // We do NOT call transporter.verify() because it will try to reach Gmail and timeout.
+        if (config.resendApiKey) {
+            logger.info('EmailService: Resend API mode active. Skipping SMTP handshake.');
+            return true;
+        }
+
         try {
+            // Only try to verify SMTP if Resend is NOT present
+            logger.info(`Verifying SMTP connection to ${config.smtp.host}...`);
             await this.transporter.verify();
             return true;
         } catch (error: any) {
-            logger.warn(`SMTP connection failed: ${error.message}. Use manual fallback.`);
+            logger.error(`SMTP Connection Check Failed: ${error.message}`);
             return false;
         }
     }
 
     async sendEmail(payload: EmailPayload): Promise<boolean> {
+        // Try Resend API first if key is available (Much more reliable on Railway)
+        if (config.resendApiKey) {
+            try {
+                logger.info(`Sending email via Resend API to ${payload.to}...`);
+                const response = await fetch('https://api.resend.com/emails', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${config.resendApiKey}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        from: config.resendApiKey ? (config.smtp.from.includes('<') ? config.smtp.from : `Vanguard HR <onboarding@resend.dev>`) : config.smtp.from,
+                        to: payload.to,
+                        subject: payload.subject,
+                        html: payload.html,
+                        text: payload.text,
+                    }),
+                });
+
+                if (response.ok) {
+                    return true;
+                } else {
+                    const error = await response.text();
+                    logger.error(`Resend API failed: ${error}`);
+                    // Fall back to SMTP if Resend fails
+                }
+            } catch (apiError: any) {
+                logger.error(`Resend API error: ${apiError.message}`);
+                // Fall back to SMTP
+            }
+        }
+
+        // Fallback or Primary SMTP logic
         try {
             await this.transporter.sendMail({
                 from: config.smtp.from,
@@ -40,7 +96,7 @@ export class EmailService {
             });
             return true;
         } catch (error: any) {
-            logger.error(`Failed to send email to ${payload.to}: ${error.message}`);
+            logger.error(`SMTP failed for ${payload.to}: ${error.message}`);
             return false;
         }
     }
@@ -85,6 +141,8 @@ export class EmailService {
             if (onProgress) onProgress(sent + failed, total, email);
         }
 
-        return { sent, failed, total, error: failed > 0 ? 'SMTP Failed' : undefined };
+        const result: { sent: number; failed: number; total: number; error?: string } = { sent, failed, total };
+        if (failed > 0) result.error = 'SMTP Failed';
+        return result;
     }
 }

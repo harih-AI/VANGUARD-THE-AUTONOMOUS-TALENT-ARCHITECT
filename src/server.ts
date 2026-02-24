@@ -3,6 +3,12 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import dns from 'dns';
+
+// Force IPv4 precedence to avoid ENETUNREACH errors on Gmail/Railway
+if (dns.setDefaultResultOrder) {
+    dns.setDefaultResultOrder('ipv4first');
+}
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { config } from './config/index.js';
@@ -30,10 +36,7 @@ async function startServer() {
         logger.info(`Default admin user created: ${config.defaultAdmin.username}`);
     }
 
-    // 2b. Verify SMTP (async to not block port binding)
-    const emailService = new EmailService();
-    logger.info('Verifying SMTP configuration...');
-    emailService.verifyConnection().catch(err => logger.error(`SMTP verify error: ${err.message}`));
+    // SMTP will be verified/used only when explicitly requested (manual invitation)
 
     // 3. Create Express app
     const app = express();

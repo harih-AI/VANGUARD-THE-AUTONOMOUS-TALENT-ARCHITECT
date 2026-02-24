@@ -8,8 +8,8 @@ export const config = {
     // SMTP Configuration
     smtp: {
         host: process.env['SMTP_HOST'] || 'smtp.gmail.com',
-        port: parseInt(process.env['SMTP_PORT'] || '465', 10),
-        secure: process.env['SMTP_SECURE'] !== 'false',  // defaults to true (SSL)
+        port: parseInt(process.env['SMTP_PORT'] || '587', 10),
+        secure: (process.env['SMTP_PORT'] === '465') || (process.env['SMTP_SECURE']?.toLowerCase() === 'true' && process.env['SMTP_PORT'] !== '587'),
         user: process.env['SMTP_USER'] || '',
         pass: process.env['SMTP_PASS'] || '',
         from: process.env['SMTP_FROM'] || 'hackathon@company.com',
@@ -38,6 +38,9 @@ export const config = {
 
     // App URL
     appUrl: process.env['APP_URL'] || 'http://localhost:3000',
+
+    // Resend (Highly recommended for Railway)
+    resendApiKey: process.env['RESEND_API_KEY'] || '',
 
     // OpenRouter
     openrouterApiKey: process.env['OPENROUTER_API_KEY'] || '',

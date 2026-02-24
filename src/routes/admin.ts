@@ -17,6 +17,64 @@ import path from 'path';
 
 const router = Router();
 
+/**
+ * Helper to perform invitations for a specific hackathon.
+ * Only invites candidates who haven't been invited to this hackathon yet.
+ */
+async function performInvitations(hackathonId: string, req: any) {
+    const db = getDatabase();
+    const hackathon = db.prepare('SELECT * FROM hackathons WHERE id = ?').get(hackathonId) as any;
+    if (!hackathon) throw new Error('Hackathon not found');
+
+    // Get candidates NOT yet invited to THIS hackathon
+    // We check the invitations table to avoid duplicate emails
+    const candidates = db.prepare(`
+        SELECT DISTINCT c.email, c.name 
+        FROM candidates c
+        LEFT JOIN invitations i ON c.email = i.candidate_email AND i.hackathon_id = ?
+        WHERE c.email != ? AND i.id IS NULL
+    `).all(hackathonId, 'N/A') as Array<{ email: string; name: string }>;
+
+    if (candidates.length === 0) {
+        return { sent: 0, failed: 0, total: 0, message: 'No new candidates to invite.', error: undefined };
+    }
+
+    const emailService = new EmailService();
+
+    // Verify SMTP config
+    const smtpOk = await emailService.verifyConnection();
+    if (!smtpOk) {
+        throw new Error('SMTP connection failed. Check your environment variables.');
+    }
+
+    // Robust URL detection for production
+    let baseUrl = config.appUrl;
+    const host = req.get('host') || '';
+    if (!baseUrl || baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1') || !baseUrl.startsWith('http')) {
+        const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
+        baseUrl = `${protocol}://${host || 'vanguard-ai.railway.app'}`;
+    }
+    const submissionUrl = `${baseUrl.replace(/\/$/, '')}/submit?hackathon=${hackathonId}`;
+
+    const result = await emailService.sendInvitations(candidates, {
+        hackathonTitle: hackathon.title,
+        hackathonDescription: hackathon.description,
+        deadline: hackathon.deadline,
+        submissionUrl,
+        candidateName: '',
+    });
+
+    // Record invitations in database
+    for (const candidate of candidates) {
+        db.prepare(`
+            INSERT OR IGNORE INTO invitations (id, hackathon_id, candidate_email, candidate_name, sent_at, status)
+            VALUES (?, ?, ?, ?, datetime('now'), 'sent')
+        `).run(uuidv4(), hackathonId, candidate.email, candidate.name);
+    }
+
+    return result;
+}
+
 // ─── Login ────────────────────────────────────────────────────
 router.post('/login', async (req, res) => {
     try {
@@ -252,53 +310,7 @@ router.get('/hackathons/:id', authMiddleware, async (req, res) => {
 router.post('/hackathons/:id/send-invitations', authMiddleware, async (req: AuthRequest, res) => {
     try {
         const hackathonId = String(req.params['id']);
-        const db = getDatabase();
-        const hackathon = db.prepare('SELECT * FROM hackathons WHERE id = ?').get(hackathonId) as any;
-        if (!hackathon) { res.status(404).json({ success: false, error: 'Hackathon not found' }); return; }
-
-        // Get all candidates
-        const candidates = db.prepare('SELECT DISTINCT email, name FROM candidates WHERE email != ?').all('N/A') as Array<{ email: string; name: string }>;
-        if (candidates.length === 0) {
-            res.status(404).json({ success: false, error: 'No candidates found. Scan resumes first.' });
-            return;
-        }
-
-        const emailService = new EmailService();
-
-        // First, verify SMTP config and fail fast with a clear error
-        const smtpOk = await emailService.verifyConnection();
-        if (!smtpOk) {
-            res.status(500).json({
-                success: false,
-                error: `SMTP connection failed. Check your SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS variables in Railway. SMTP_HOST must be 'smtp.gmail.com' (not 'smlp.gmail.com'). SMTP_PORT must be '587'.`
-            });
-            return;
-        }
-
-        // Robust URL detection for production
-        let baseUrl = config.appUrl;
-        const host = req.get('host') || '';
-        if (!baseUrl || baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1') || !baseUrl.startsWith('http')) {
-            const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
-            baseUrl = `${protocol}://${host || 'vanguard-ai.railway.app'}`;
-        }
-        const submissionUrl = `${baseUrl.replace(/\/$/, '')}/submit?hackathon=${hackathonId}`;
-
-        const result = await emailService.sendInvitations(candidates, {
-            hackathonTitle: hackathon.title,
-            hackathonDescription: hackathon.description,
-            deadline: hackathon.deadline,
-            submissionUrl,
-            candidateName: '',
-        });
-
-        // Record invitations in database
-        for (const candidate of candidates) {
-            db.prepare(`
-        INSERT OR IGNORE INTO invitations (id, hackathon_id, candidate_email, candidate_name, sent_at, status)
-        VALUES (?, ?, ?, ?, datetime('now'), 'sent')
-      `).run(uuidv4(), hackathonId, candidate.email, candidate.name);
-        }
+        const result = await performInvitations(hackathonId, req);
 
         if (result.sent === 0 && result.failed > 0) {
             res.json({ success: false, error: `All ${result.failed} emails failed. Error: ${result.error || 'Unknown SMTP error. Check server logs.'}` });
