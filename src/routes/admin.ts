@@ -138,6 +138,7 @@ router.post('/scan-resumes', authMiddleware, async (req: AuthRequest, res) => {
         }
 
         const allFiles = await getFiles(resumesDir);
+        logger.info(`Scan Resumes triggered. Found ${allFiles.length} files total.`);
         const supportedExtensions = ['.pdf', '.docx', '.doc', '.txt'];
         const resumeFiles = allFiles.filter(f => supportedExtensions.includes(path.extname(f).toLowerCase()));
 
@@ -165,6 +166,7 @@ router.post('/scan-resumes', authMiddleware, async (req: AuthRequest, res) => {
                 processedHashes.add(contentSnippet);
 
                 const candidate = await InformationExtractor.extract(cleanedText, fileName);
+                logger.info(`Extracted candidate for ${fileName}: ${candidate.name} (${candidate.email})`);
                 candidates.push(candidate);
 
                 // Store in database

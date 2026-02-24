@@ -66,7 +66,7 @@ async function main() {
                 }
                 processedHashes.add(contentSnippet);
 
-                const candidate = InformationExtractor.extract(cleanedText, fileName);
+                const candidate = await InformationExtractor.extract(cleanedText, fileName);
                 candidates.push(candidate);
 
                 console.log(chalk.green('DONE'));
