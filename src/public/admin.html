@@ -1029,8 +1029,21 @@
       <td><strong>${h.title}</strong></td>
       <td>${new Date(h.deadline).toLocaleString()}</td>
       <td><span class="badge badge-${h.status}">${h.status}</span></td>
-      <td><button class="btn btn-success btn-sm" onclick="sendInvitations('${h.id}')">Send Invitations</button></td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="copySubmissionLink('${h.id}')">Copy Link</button>
+        <button class="btn btn-success btn-sm" onclick="sendInvitations('${h.id}')">Send Invitations</button>
+      </td>
     </tr>`).join('')}</tbody></table>`;
+    }
+
+    function copySubmissionLink(hackathonId) {
+      const baseUrl = window.location.origin;
+      const link = `${baseUrl}/submit?hackathon=${hackathonId}`;
+      navigator.clipboard.writeText(link).then(() => {
+        toast('Common submission link copied to clipboard!');
+      }).catch(err => {
+        toast('Failed to copy', 'error');
+      });
     }
 
     async function sendInvitations(hackathonId) {
