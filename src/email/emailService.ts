@@ -34,61 +34,23 @@ export class EmailService {
     }
 
     async verifyConnection(): Promise<boolean> {
-        // If Resend is configured, we consider the service "ready" immediately.
-        // We do NOT call transporter.verify() because it will try to reach Gmail and timeout.
-        if (config.resendApiKey) {
-            logger.info('EmailService: Resend API mode active. Skipping SMTP handshake.');
-            return true;
-        }
-
         try {
-            // Only try to verify SMTP if Resend is NOT present
-            logger.info(`Verifying SMTP connection to ${config.smtp.host}...`);
+            // Force verify the Gmail SMTP connection
+            logger.info(`Verifying Gmail SMTP connection to ${config.smtp.host}...`);
             await this.transporter.verify();
             return true;
         } catch (error: any) {
-            logger.error(`SMTP Connection Check Failed: ${error.message}`);
+            logger.error(`Gmail SMTP Connection Check Failed: ${error.message}`);
             return false;
         }
     }
 
     async sendEmail(payload: EmailPayload): Promise<boolean> {
-        // Try Resend API first if key is available (Much more reliable on Railway)
-        if (config.resendApiKey) {
-            try {
-                logger.info(`Sending email via Resend API to ${payload.to}...`);
-                const response = await fetch('https://api.resend.com/emails', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${config.resendApiKey}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        from: 'Vanguard HR <onboarding@resend.dev>',
-                        to: payload.to,
-                        subject: payload.subject,
-                        html: payload.html,
-                        text: payload.text,
-                    }),
-                });
-
-                if (response.ok) {
-                    return true;
-                } else {
-                    const error = await response.text();
-                    logger.error(`Resend API failed: ${error}`);
-                    // Fall back to SMTP if Resend fails
-                }
-            } catch (apiError: any) {
-                logger.error(`Resend API error: ${apiError.message}`);
-                // Fall back to SMTP
-            }
-        }
-
-        // Fallback or Primary SMTP logic
+        // Strictly use Gmail SMTP as requested
         try {
+            logger.info(`Sending email via Gmail SMTP to ${payload.to}...`);
             await this.transporter.sendMail({
-                from: config.smtp.from,
+                from: config.smtp.user, // Use the actual Gmail user address as sender
                 to: payload.to,
                 subject: payload.subject,
                 html: payload.html,
@@ -96,7 +58,7 @@ export class EmailService {
             });
             return true;
         } catch (error: any) {
-            logger.error(`SMTP failed for ${payload.to}: ${error.message}`);
+            logger.error(`Gmail SMTP delivery failed for ${payload.to}: ${error.message}`);
             return false;
         }
     }
