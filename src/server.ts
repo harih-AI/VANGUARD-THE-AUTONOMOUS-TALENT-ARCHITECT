@@ -9,6 +9,7 @@ import { config } from './config/index.js';
 import { initDatabase, getDatabase, closeDatabase } from './database/index.js';
 import adminRoutes from './routes/admin.js';
 import submissionRoutes from './routes/submission.js';
+import { EmailService } from './email/emailService.js';
 import logger from './utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -28,6 +29,10 @@ async function startServer() {
         );
         logger.info(`Default admin user created: ${config.defaultAdmin.username}`);
     }
+
+    // 2b. Verify SMTP
+    const emailService = new EmailService();
+    await emailService.verifyConnection();
 
     // 3. Create Express app
     const app = express();

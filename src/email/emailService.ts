@@ -96,9 +96,10 @@ export class EmailService {
         emails: Array<{ email: string; name: string }>,
         ctx: InvitationContext,
         onProgress?: (sent: number, total: number, email: string) => void
-    ): Promise<{ sent: number; failed: number; total: number }> {
+    ): Promise<{ sent: number; failed: number; total: number; error?: string }> {
         let sent = 0;
         let failed = 0;
+        let lastError = '';
         const total = emails.length;
 
         for (const { email, name } of emails) {
@@ -106,11 +107,17 @@ export class EmailService {
             const payload = this.generateInvitationEmail(personalCtx);
             payload.to = email;
 
-            const success = await this.sendEmail(payload);
-            if (success) {
-                sent++;
-            } else {
+            try {
+                const success = await this.sendEmail(payload);
+                if (success) {
+                    sent++;
+                } else {
+                    failed++;
+                    lastError = 'See server logs for details';
+                }
+            } catch (err: any) {
                 failed++;
+                lastError = err.message;
             }
 
             if (onProgress) {
@@ -119,6 +126,6 @@ export class EmailService {
         }
 
         logger.info(`Invitation send complete: ${sent} sent, ${failed} failed out of ${total}`);
-        return { sent, failed, total };
+        return { sent, failed, total, error: lastError };
     }
 }
