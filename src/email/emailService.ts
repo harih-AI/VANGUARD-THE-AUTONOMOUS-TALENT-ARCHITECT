@@ -1,26 +1,43 @@
+import { Resend } from 'resend';
 import nodemailer from 'nodemailer';
 import type { EmailPayload, InvitationContext } from '../types/index.js';
 import { config } from '../config/index.js';
 import logger from '../utils/logger.js';
 
 export class EmailService {
-    private transporter: nodemailer.Transporter;
+    private resend: Resend | null = null;
+    private transporter: nodemailer.Transporter | null = null;
+    private useResend: boolean;
 
     constructor() {
-        this.transporter = nodemailer.createTransport({
-            host: config.smtp.host,
-            port: config.smtp.port,
-            secure: config.smtp.secure,
-            auth: {
-                user: config.smtp.user,
-                pass: config.smtp.pass,
-            },
-        });
+        const resendKey = process.env['RESEND_API_KEY'] || '';
+        this.useResend = !!resendKey;
+
+        if (this.useResend) {
+            this.resend = new Resend(resendKey);
+            logger.info('Email provider: Resend API (HTTP)');
+        } else {
+            this.transporter = nodemailer.createTransport({
+                host: config.smtp.host,
+                port: config.smtp.port,
+                secure: config.smtp.secure,
+                auth: {
+                    user: config.smtp.user,
+                    pass: config.smtp.pass,
+                },
+            });
+            logger.info(`Email provider: SMTP (${config.smtp.host}:${config.smtp.port})`);
+        }
     }
 
     async verifyConnection(): Promise<boolean> {
+        if (this.useResend) {
+            // Resend doesn't need verification — it uses HTTPS which always works on Railway
+            logger.info('Resend API key found. Email delivery is ready.');
+            return true;
+        }
         try {
-            await this.transporter.verify();
+            await this.transporter!.verify();
             logger.info('SMTP connection verified successfully');
             return true;
         } catch (error: any) {
@@ -30,19 +47,41 @@ export class EmailService {
     }
 
     async sendEmail(payload: EmailPayload): Promise<boolean> {
+        if (this.useResend && this.resend) {
+            try {
+                const from = config.smtp.from || 'Vanguard HR <onboarding@resend.dev>';
+                const { error } = await this.resend.emails.send({
+                    from,
+                    to: payload.to,
+                    subject: payload.subject,
+                    html: payload.html,
+                    text: payload.text,
+                });
+                if (error) {
+                    logger.error(`Resend failed to send to ${payload.to}: ${error.message}`);
+                    return false;
+                }
+                logger.info(`Email sent via Resend to ${payload.to}`);
+                return true;
+            } catch (error: any) {
+                logger.error(`Resend exception for ${payload.to}: ${error.message}`);
+                return false;
+            }
+        }
+
+        // Fallback: SMTP
         try {
-            const info = await this.transporter.sendMail({
+            const info = await this.transporter!.sendMail({
                 from: config.smtp.from,
                 to: payload.to,
                 subject: payload.subject,
                 html: payload.html,
                 text: payload.text,
             });
-            logger.info(`Email sent to ${payload.to}: ${info.messageId}`);
+            logger.info(`Email sent via SMTP to ${payload.to}: ${info.messageId}`);
             return true;
         } catch (error: any) {
             logger.error(`Failed to send email to ${payload.to}: ${error.message}`);
-            // Log the email content so it's not lost
             logger.info(`[EMAIL LOG] To: ${payload.to} | Subject: ${payload.subject}`);
             return false;
         }
