@@ -275,7 +275,13 @@ router.post('/hackathons/:id/send-invitations', authMiddleware, async (req: Auth
             return;
         }
 
-        const submissionUrl = `${config.appUrl}/submit?hackathon=${hackathonId}`;
+        // Use request host as fallback if APP_URL is localhost (common in Railway/Production)
+        let baseUrl = config.appUrl;
+        if (baseUrl.includes('localhost')) {
+            const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
+            baseUrl = `${protocol}://${req.get('host')}`;
+        }
+        const submissionUrl = `${baseUrl}/submit?hackathon=${hackathonId}`;
 
         const result = await emailService.sendInvitations(candidates, {
             hackathonTitle: hackathon.title,

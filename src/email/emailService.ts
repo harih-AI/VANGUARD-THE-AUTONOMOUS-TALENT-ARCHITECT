@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import sgMail from '@sendgrid/mail';
 import nodemailer from 'nodemailer';
 import type { EmailPayload, InvitationContext } from '../types/index.js';
 import { config } from '../config/index.js';
@@ -7,21 +8,30 @@ import logger from '../utils/logger.js';
 export class EmailService {
     private resend: Resend | null = null;
     private transporter: nodemailer.Transporter | null = null;
-    private brevoKey: string;
     private useResend: boolean;
+    private useSendGrid: boolean;
     private useBrevo: boolean;
+    private brevoKey: string;
 
     constructor() {
+        // Provider keys
         const resendKey = process.env['RESEND_API_KEY'] || '';
+        const sendgridKey = process.env['SENDGRID_API_KEY'] || '';
         this.brevoKey = process.env['BREVO_API_KEY'] || '';
-        this.useBrevo = !!this.brevoKey;
-        this.useResend = !this.useBrevo && !!resendKey;
 
-        if (this.useBrevo) {
-            logger.info('Email provider: Brevo API (HTTP) — sends to any recipient!');
+        // Priority: SendGrid (Simple) > Brevo > Resend > SMTP
+        this.useSendGrid = !!sendgridKey;
+        this.useBrevo = !this.useSendGrid && !!this.brevoKey;
+        this.useResend = !this.useSendGrid && !this.useBrevo && !!resendKey;
+
+        if (this.useSendGrid) {
+            sgMail.setApiKey(sendgridKey);
+            logger.info('Email provider: SendGrid API (HTTP) - Automatic Mode');
+        } else if (this.useBrevo) {
+            logger.info('Email provider: Brevo API (HTTP) - Automatic Mode');
         } else if (this.useResend) {
             this.resend = new Resend(resendKey);
-            logger.info('Email provider: Resend API (HTTP) — domain verification required for non-owned emails');
+            logger.info('Email provider: Resend API (HTTP) - Automatic Mode');
         } else {
             this.transporter = nodemailer.createTransport({
                 host: config.smtp.host,
@@ -31,141 +41,109 @@ export class EmailService {
                     user: config.smtp.user,
                     pass: config.smtp.pass,
                 },
+                tls: { rejectUnauthorized: false } // Helps with cloud SMTP blocks sometimes
             });
-            logger.info(`Email provider: SMTP (${config.smtp.host}:${config.smtp.port})`);
+            logger.info(`Email provider: SMTP (${config.smtp.host}:${config.smtp.port}) - Passive Mode`);
         }
     }
 
     async verifyConnection(): Promise<boolean> {
-        if (this.useBrevo || this.useResend) {
-            logger.info('HTTP email API is ready.');
-            return true;
-        }
+        if (this.useSendGrid || this.useBrevo || this.useResend) return true;
         try {
             await this.transporter!.verify();
-            logger.info('SMTP connection verified successfully');
             return true;
         } catch (error: any) {
-            logger.warn(`SMTP connection failed: ${error.message}. Emails will be logged but not sent.`);
-            return false;
-        }
-    }
-
-    private async sendViaBrevo(payload: EmailPayload): Promise<boolean> {
-        const senderEmail = config.smtp.from?.replace(/.*<(.+)>.*/, '$1') || config.smtp.user;
-        const senderName = config.smtp.from?.match(/^(.+)</) ? config.smtp.from.match(/^(.+)</)?.[1].trim() : 'Vanguard HR';
-
-        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-            method: 'POST',
-            headers: {
-                'api-key': this.brevoKey,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                sender: { name: senderName || 'Vanguard HR', email: senderEmail },
-                to: [{ email: payload.to }],
-                subject: payload.subject,
-                htmlContent: payload.html,
-                textContent: payload.text,
-            }),
-        });
-
-        if (response.ok) {
-            logger.info(`Email sent via Brevo to ${payload.to}`);
-            return true;
-        } else {
-            const err = await response.json() as any;
-            logger.error(`Brevo failed to send to ${payload.to}: ${err.message || JSON.stringify(err)}`);
+            logger.warn(`SMTP check failed: ${error.message}`);
             return false;
         }
     }
 
     async sendEmail(payload: EmailPayload): Promise<boolean> {
-        if (this.useBrevo) {
-            return this.sendViaBrevo(payload);
-        }
-
-        if (this.useResend && this.resend) {
+        // 1. SENDGRID (Simple Automatic)
+        if (this.useSendGrid) {
             try {
-                const from = config.smtp.from || 'Vanguard HR <onboarding@resend.dev>';
-                const { error } = await this.resend.emails.send({
-                    from,
+                await sgMail.send({
                     to: payload.to,
+                    from: config.smtp.from || 'hackathon@company.com',
                     subject: payload.subject,
                     html: payload.html,
-                    ...(payload.text ? { text: payload.text } : {}),
+                    text: payload.text || '',
                 });
-                if (error) {
-                    logger.error(`Resend failed to send to ${payload.to}: ${error.message}`);
-                    return false;
-                }
-                logger.info(`Email sent via Resend to ${payload.to}`);
+                logger.info(`Email sent via SendGrid to ${payload.to}`);
                 return true;
             } catch (error: any) {
-                logger.error(`Resend exception for ${payload.to}: ${error.message}`);
+                logger.error(`SendGrid failed: ${error.message}`);
                 return false;
             }
         }
 
-        // Fallback: SMTP
+        // 2. BREVO (API Fallback)
+        if (this.useBrevo) {
+            try {
+                const senderEmail = config.smtp.from?.replace(/.*<(.+)>.*/, '$1') || config.smtp.user;
+                const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+                    method: 'POST',
+                    headers: { 'api-key': this.brevoKey, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sender: { name: 'Vanguard HR', email: senderEmail },
+                        to: [{ email: payload.to }],
+                        subject: payload.subject,
+                        htmlContent: payload.html,
+                    }),
+                });
+                return response.ok;
+            } catch (error: any) { return false; }
+        }
+
+        // 3. RESEND
+        if (this.useResend && this.resend) {
+            try {
+                await this.resend.emails.send({
+                    from: config.smtp.from || 'onboarding@resend.dev',
+                    to: payload.to,
+                    subject: payload.subject,
+                    html: payload.html,
+                });
+                return true;
+            } catch (error: any) { return false; }
+        }
+
+        // 4. SMTP (Will likely time out on Railway)
         try {
-            const info = await this.transporter!.sendMail({
+            await this.transporter!.sendMail({
                 from: config.smtp.from,
                 to: payload.to,
                 subject: payload.subject,
                 html: payload.html,
-                text: payload.text,
             });
-            logger.info(`Email sent via SMTP to ${payload.to}: ${info.messageId}`);
             return true;
         } catch (error: any) {
-            logger.error(`Failed to send email to ${payload.to}: ${error.message}`);
-            logger.info(`[EMAIL LOG] To: ${payload.to} | Subject: ${payload.subject}`);
+            logger.error(`SMTP Failed: ${error.message}`);
             return false;
         }
     }
 
     generateInvitationEmail(ctx: InvitationContext): EmailPayload {
+        // Ensure the link works! If appUrl is localhost, we should have warned the user,
+        // but here we just use what is provided.
         const html = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="font-family: 'Segoe UI', Tahoma, Geneva, sans-serif; max-width: 600px; margin: 0 auto; background: #f4f7fc; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 40px 30px; text-align: center; color: white;">
-    <h1 style="margin: 0 0 10px; font-size: 28px;">🚀 You're Invited!</h1>
-    <h2 style="margin: 0; font-weight: 400; font-size: 20px;">${ctx.hackathonTitle}</h2>
-  </div>
-  <div style="background: white; border-radius: 16px; padding: 30px; margin-top: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);">
-    <p style="font-size: 16px; color: #333;">Hi <strong>${ctx.candidateName}</strong>,</p>
-    <p style="font-size: 15px; color: #555; line-height: 1.6;">
-      We are thrilled to invite you to participate in our upcoming hackathon:
-      <strong>${ctx.hackathonTitle}</strong>!
-    </p>
-    ${ctx.hackathonDescription ? `<p style="font-size: 14px; color: #666; line-height: 1.6; background: #f8f9fa; padding: 15px; border-radius: 8px;">${ctx.hackathonDescription}</p>` : ''}
-    <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; border-radius: 4px; margin: 20px 0;">
-      <strong>⏰ Deadline:</strong> ${new Date(ctx.deadline).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })}
-    </div>
-    <div style="text-align: center; margin: 30px 0;">
-      <a href="${ctx.submissionUrl}" 
-         style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 40px; border-radius: 8px; text-decoration: none; font-size: 16px; font-weight: 600; display: inline-block;">
-        Submit Your Project →
-      </a>
-    </div>
-    <p style="font-size: 13px; color: #999; text-align: center;">
-      Submit your GitHub repository link before the deadline to participate.
-    </p>
-  </div>
-  <p style="text-align: center; font-size: 12px; color: #aaa; margin-top: 20px;">
-    This is an automated invitation. Please do not reply to this email.
-  </p>
-</body>
-</html>`;
+        <div style="font-family:sans-serif; max-width:600px; margin:0 auto; padding:20px; border:1px solid #eee; border-radius:10px;">
+            <h2 style="color:#667eea;">🚀 Hackathon Invitation</h2>
+            <p>Hi <b>${ctx.candidateName}</b>,</p>
+            <p>You are invited to participate in <b>${ctx.hackathonTitle}</b>.</p>
+            <div style="background:#f9f9f9; padding:15px; border-radius:8px; margin:20px 0;">
+                <p style="margin:0;"><b>Deadline:</b> ${new Date(ctx.deadline).toLocaleString()}</p>
+            </div>
+            <p>Click the button below to submit your project repository:</p>
+            <a href="${ctx.submissionUrl}" style="background:#667eea; color:white; padding:12px 25px; border-radius:5px; text-decoration:none; display:inline-block; font-weight:bold;">Submit Project →</a>
+            <p style="color:#888; font-size:12px; margin-top:30px;">If the button doesn't work, copy-paste this link: ${ctx.submissionUrl}</p>
+        </div>`;
 
         return {
             to: '',
             subject: `🚀 Hackathon Invitation: ${ctx.hackathonTitle}`,
             html,
-            text: `You're invited to ${ctx.hackathonTitle}! Submit your GitHub repo at ${ctx.submissionUrl} before ${ctx.deadline}.`,
+            text: `Invite to ${ctx.hackathonTitle}. Submit at: ${ctx.submissionUrl}`,
         };
     }
 
@@ -184,30 +162,19 @@ export class EmailService {
             const payload = this.generateInvitationEmail(personalCtx);
             payload.to = email;
 
-            try {
-                const success = await this.sendEmail(payload);
-                if (success) {
-                    sent++;
-                } else {
-                    failed++;
-                    lastError = 'See server logs for details';
-                }
-            } catch (err: any) {
+            const success = await this.sendEmail(payload);
+            if (success) sent++;
+            else {
                 failed++;
-                lastError = err.message;
+                lastError = 'API Error - check provider logs';
             }
 
-            // Rate limiting: max 2 req/sec for Resend, Brevo is more lenient
-            if (!this.useBrevo) {
-                await new Promise(resolve => setTimeout(resolve, 600));
-            }
+            // Small delay to avoid rate limits
+            await new Promise(resolve => setTimeout(resolve, 500));
 
-            if (onProgress) {
-                onProgress(sent + failed, total, email);
-            }
+            if (onProgress) onProgress(sent + failed, total, email);
         }
 
-        logger.info(`Invitation send complete: ${sent} sent, ${failed} failed out of ${total}`);
         return { sent, failed, total, error: lastError };
     }
 }
