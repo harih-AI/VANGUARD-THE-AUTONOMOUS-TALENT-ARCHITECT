@@ -305,7 +305,7 @@ router.post('/hackathons/:id/send-invitations', authMiddleware, async (req: Auth
 });
 
 // ─── Test SMTP ─────────────────────────────────────────────────
-router.get('/test-smtp', authMiddleware, async (_req, res) => {
+router.get('/test-smtp', async (_req, res) => {
     try {
         const emailService = new EmailService();
         const ok = await emailService.verifyConnection();
