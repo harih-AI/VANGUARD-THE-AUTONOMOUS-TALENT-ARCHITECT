@@ -55,7 +55,7 @@ export class EmailService {
                     to: payload.to,
                     subject: payload.subject,
                     html: payload.html,
-                    text: payload.text,
+                    ...(payload.text ? { text: payload.text } : {}),
                 });
                 if (error) {
                     logger.error(`Resend failed to send to ${payload.to}: ${error.message}`);
@@ -158,6 +158,9 @@ export class EmailService {
                 failed++;
                 lastError = err.message;
             }
+
+            // Respect Resend's rate limit (2 req/sec max)
+            await new Promise(resolve => setTimeout(resolve, 600));
 
             if (onProgress) {
                 onProgress(sent + failed, total, email);
