@@ -997,8 +997,15 @@
           <div class="stat-card"><div class="value">${d.duplicatesSkipped}</div><div class="label">Duplicates Skipped</div></div>
           <div class="stat-card"><div class="value">${d.errors}</div><div class="label">Errors</div></div>
         </div>
-        <table><thead><tr><th>Name</th><th>Email</th><th>Phone</th></tr></thead>
-        <tbody>${d.candidates.map(c => `<tr><td>${c.name}</td><td>${c.email}</td><td>${c.phone}</td></tr>`).join('')}</tbody></table>`;
+        <table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Status/Experience</th></tr></thead>
+        <tbody>${d.candidates.map(c => `<tr>
+          <td>${c.name}</td>
+          <td>${c.email}</td>
+          <td>${c.phone}</td>
+          <td style="font-size:11px;color:${c.name === 'Unknown Candidate' ? 'var(--danger)' : 'var(--muted)'};">
+            ${c.name === 'Unknown Candidate' ? c.experience : (c.experience.substring(0, 50) + '...')}
+          </td>
+        </tr>`).join('')}</tbody></table>`;
       } else { toast(res.error, 'error'); }
     }
 
