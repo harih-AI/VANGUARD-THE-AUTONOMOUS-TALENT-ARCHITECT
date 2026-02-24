@@ -30,9 +30,10 @@ async function startServer() {
         logger.info(`Default admin user created: ${config.defaultAdmin.username}`);
     }
 
-    // 2b. Verify SMTP
+    // 2b. Verify SMTP (async to not block port binding)
     const emailService = new EmailService();
-    await emailService.verifyConnection();
+    logger.info('Verifying SMTP configuration...');
+    emailService.verifyConnection().catch(err => logger.error(`SMTP verify error: ${err.message}`));
 
     // 3. Create Express app
     const app = express();
