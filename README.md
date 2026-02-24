@@ -77,6 +77,36 @@ The Admin Panel will be available at `http://localhost:3000/admin`.
 
 ---
 
+## 🌐 Deploying to the Cloud
+
+Vanguard can be deployed easily using Docker or cloud platforms. Since it uses SQLite, ensure your deployment platform supports **Persistent Volumes**.
+
+### Option 1: Railway (Recommended)
+1.  Connect your GitHub repository to [Railway.app](https://railway.app).
+2.  Add a **Volume** and mount it to `/app/data` to persist the SQLite database.
+3.  Set the following **Environment Variables**:
+    *   `OPENROUTER_API_KEY`: Your API key.
+    *   `PORT`: 3000
+    *   `DB_PATH`: `/app/data/hackathon.db`
+4.  Railway will automatically detect the `Dockerfile` and deploy.
+
+### Option 2: Docker
+You can run the entire stack locally or on a VPS using Docker:
+```bash
+# Build the image
+docker build -t vanguard-ai .
+
+# Run the container with a persistent volume
+docker run -d \
+  -p 3000:3000 \
+  -v vanguard_data:/app/data \
+  -e OPENROUTER_API_KEY=your_key_here \
+  --name vanguard-instance \
+  vanguard-ai
+```
+
+---
+
 ## ⚖️ Compliance & Fairness
 Vanguard is built on **MindFleet principles**, ensuring that all evaluations are deterministic, structured, and free from human bias. Every score is backed by specific evidence cited directly from the candidate's submission.
 
