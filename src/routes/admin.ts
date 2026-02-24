@@ -195,7 +195,7 @@ router.post('/scan-resumes', authMiddleware, async (req: AuthRequest, res) => {
                 duplicatesSkipped: resumeFiles.length - candidates.length - errors.length,
                 errors: errors.length,
                 errorDetails: errors,
-                candidates: candidates.map(c => ({ name: c.name, email: c.email, phone: c.phone })),
+                candidates: candidates.map(c => ({ name: c.name, email: c.email, phone: c.phone, experience: c.experience })),
             },
         });
     } catch (error: any) {
