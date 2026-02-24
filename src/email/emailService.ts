@@ -7,15 +7,21 @@ import logger from '../utils/logger.js';
 export class EmailService {
     private resend: Resend | null = null;
     private transporter: nodemailer.Transporter | null = null;
+    private brevoKey: string;
     private useResend: boolean;
+    private useBrevo: boolean;
 
     constructor() {
         const resendKey = process.env['RESEND_API_KEY'] || '';
-        this.useResend = !!resendKey;
+        this.brevoKey = process.env['BREVO_API_KEY'] || '';
+        this.useBrevo = !!this.brevoKey;
+        this.useResend = !this.useBrevo && !!resendKey;
 
-        if (this.useResend) {
+        if (this.useBrevo) {
+            logger.info('Email provider: Brevo API (HTTP) — sends to any recipient!');
+        } else if (this.useResend) {
             this.resend = new Resend(resendKey);
-            logger.info('Email provider: Resend API (HTTP)');
+            logger.info('Email provider: Resend API (HTTP) — domain verification required for non-owned emails');
         } else {
             this.transporter = nodemailer.createTransport({
                 host: config.smtp.host,
@@ -31,9 +37,8 @@ export class EmailService {
     }
 
     async verifyConnection(): Promise<boolean> {
-        if (this.useResend) {
-            // Resend doesn't need verification — it uses HTTPS which always works on Railway
-            logger.info('Resend API key found. Email delivery is ready.');
+        if (this.useBrevo || this.useResend) {
+            logger.info('HTTP email API is ready.');
             return true;
         }
         try {
@@ -46,7 +51,40 @@ export class EmailService {
         }
     }
 
+    private async sendViaBrevo(payload: EmailPayload): Promise<boolean> {
+        const senderEmail = config.smtp.from?.replace(/.*<(.+)>.*/, '$1') || config.smtp.user;
+        const senderName = config.smtp.from?.match(/^(.+)</) ? config.smtp.from.match(/^(.+)</)?.[1].trim() : 'Vanguard HR';
+
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            headers: {
+                'api-key': this.brevoKey,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                sender: { name: senderName || 'Vanguard HR', email: senderEmail },
+                to: [{ email: payload.to }],
+                subject: payload.subject,
+                htmlContent: payload.html,
+                textContent: payload.text,
+            }),
+        });
+
+        if (response.ok) {
+            logger.info(`Email sent via Brevo to ${payload.to}`);
+            return true;
+        } else {
+            const err = await response.json() as any;
+            logger.error(`Brevo failed to send to ${payload.to}: ${err.message || JSON.stringify(err)}`);
+            return false;
+        }
+    }
+
     async sendEmail(payload: EmailPayload): Promise<boolean> {
+        if (this.useBrevo) {
+            return this.sendViaBrevo(payload);
+        }
+
         if (this.useResend && this.resend) {
             try {
                 const from = config.smtp.from || 'Vanguard HR <onboarding@resend.dev>';
@@ -124,7 +162,7 @@ export class EmailService {
 </html>`;
 
         return {
-            to: '',  // Will be set per candidate
+            to: '',
             subject: `🚀 Hackathon Invitation: ${ctx.hackathonTitle}`,
             html,
             text: `You're invited to ${ctx.hackathonTitle}! Submit your GitHub repo at ${ctx.submissionUrl} before ${ctx.deadline}.`,
@@ -159,8 +197,10 @@ export class EmailService {
                 lastError = err.message;
             }
 
-            // Respect Resend's rate limit (2 req/sec max)
-            await new Promise(resolve => setTimeout(resolve, 600));
+            // Rate limiting: max 2 req/sec for Resend, Brevo is more lenient
+            if (!this.useBrevo) {
+                await new Promise(resolve => setTimeout(resolve, 600));
+            }
 
             if (onProgress) {
                 onProgress(sent + failed, total, email);
