@@ -275,13 +275,14 @@ router.post('/hackathons/:id/send-invitations', authMiddleware, async (req: Auth
             return;
         }
 
-        // Use request host as fallback if APP_URL is localhost (common in Railway/Production)
+        // Robust URL detection for production
         let baseUrl = config.appUrl;
-        if (baseUrl.includes('localhost')) {
+        const host = req.get('host') || '';
+        if (!baseUrl || baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1') || !baseUrl.startsWith('http')) {
             const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
-            baseUrl = `${protocol}://${req.get('host')}`;
+            baseUrl = `${protocol}://${host || 'vanguard-ai.railway.app'}`;
         }
-        const submissionUrl = `${baseUrl}/submit?hackathon=${hackathonId}`;
+        const submissionUrl = `${baseUrl.replace(/\/$/, '')}/submit?hackathon=${hackathonId}`;
 
         const result = await emailService.sendInvitations(candidates, {
             hackathonTitle: hackathon.title,
@@ -335,13 +336,14 @@ router.get('/hackathons/:id/invitation-preview', authMiddleware, async (req, res
 
         const candidates = db.prepare('SELECT DISTINCT email, name FROM candidates WHERE email != ?').all('N/A') as Array<{ email: string; name: string }>;
 
-        // Use request host as fallback if APP_URL is localhost (common in Railway/Production)
+        // Robust URL detection for production
         let baseUrl = config.appUrl;
-        if (baseUrl.includes('localhost')) {
+        const host = req.get('host') || '';
+        if (!baseUrl || baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1') || !baseUrl.startsWith('http')) {
             const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
-            baseUrl = `${protocol}://${req.get('host')}`;
+            baseUrl = `${protocol}://${host || 'vanguard-ai.railway.app'}`;
         }
-        const submissionUrl = `${baseUrl}/submit?hackathon=${hackathonId}`;
+        const submissionUrl = `${baseUrl.replace(/\/$/, '')}/submit?hackathon=${hackathonId}`;
         const emailBody = `Hi [Candidate Name],\n\nYou are invited to participate in: ${hackathon.title}\n\n${hackathon.description ? hackathon.description + '\n\n' : ''}Deadline: ${new Date(hackathon.deadline).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })}\n\nSubmit your project here:\n${submissionUrl}\n\nGood luck!\n— Vanguard HR Team`;
 
         res.json({ success: true, data: { hackathonTitle: hackathon.title, candidates, emailBody, submissionUrl } });
