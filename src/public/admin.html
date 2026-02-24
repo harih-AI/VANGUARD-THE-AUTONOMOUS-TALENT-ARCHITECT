@@ -1073,9 +1073,10 @@
             <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">BODY (click to copy):</label>
             <div style="background:var(--bg);padding:10px;border-radius:8px;font-size:12px;white-space:pre-wrap;cursor:pointer;border:1px solid var(--border);max-height:200px;overflow-y:auto;" onclick="navigator.clipboard.writeText(this.innerText);this.style.color='#4afa9a';" title="Click to copy">${data.emailBody}</div>
           </div>
-          <div style="display:flex;gap:12px;justify-content:flex-end;">
-            <a href="https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(recipientList)}&su=${encodeURIComponent('🚀 Hackathon Invitation: ' + data.hackathonTitle)}" target="_blank"
-               style="background:var(--accent);color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:14px;">
+          <div style="display:flex;gap:12px;justify-content:flex-end;align-items:center;">
+            ${data.submissionUrl.includes('localhost') ? `<div style="flex:1;color:#e74c3c;font-size:11px;padding:6px 10px;background:rgba(231,76,60,0.1);border-radius:6px;border:1px solid rgba(231,76,60,0.2);">⚠️ Warning: URL points to localhost. Check Railway settings.</div>` : ''}
+            <a href="https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(recipientList)}&su=${encodeURIComponent('🚀 Hackathon Invitation: ' + data.hackathonTitle)}&body=${encodeURIComponent(data.emailBody)}" target="_blank"
+               style="background:var(--accent);color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">
               Open in Gmail →
             </a>
             <button onclick="this.closest('div[style*=fixed]').remove()" style="padding:10px 20px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;">Close</button>

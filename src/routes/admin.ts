@@ -328,7 +328,14 @@ router.get('/hackathons/:id/invitation-preview', authMiddleware, async (req, res
         if (!hackathon) { res.status(404).json({ success: false, error: 'Hackathon not found' }); return; }
 
         const candidates = db.prepare('SELECT DISTINCT email, name FROM candidates WHERE email != ?').all('N/A') as Array<{ email: string; name: string }>;
-        const submissionUrl = `${config.appUrl}/submit?hackathon=${hackathonId}`;
+
+        // Use request host as fallback if APP_URL is localhost (common in Railway/Production)
+        let baseUrl = config.appUrl;
+        if (baseUrl.includes('localhost')) {
+            const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
+            baseUrl = `${protocol}://${req.get('host')}`;
+        }
+        const submissionUrl = `${baseUrl}/submit?hackathon=${hackathonId}`;
         const emailBody = `Hi [Candidate Name],\n\nYou are invited to participate in: ${hackathon.title}\n\n${hackathon.description ? hackathon.description + '\n\n' : ''}Deadline: ${new Date(hackathon.deadline).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })}\n\nSubmit your project here:\n${submissionUrl}\n\nGood luck!\n— Vanguard HR Team`;
 
         res.json({ success: true, data: { hackathonTitle: hackathon.title, candidates, emailBody, submissionUrl } });
