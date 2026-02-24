@@ -81,7 +81,7 @@ The Admin Panel will be available at `http://localhost:3000/admin`.
 
 Vanguard can be deployed easily using Docker or cloud platforms. Since it uses SQLite, ensure your deployment platform supports **Persistent Volumes**.
 
-### Option 1: Railway (Recommended)
+### Option 1: Railway (Recommended for SQLite)
 1.  Connect your GitHub repository to [Railway.app](https://railway.app).
 2.  Add a **Volume** and mount it to `/app/data` to persist the SQLite database.
 3.  Set the following **Environment Variables**:
@@ -89,6 +89,16 @@ Vanguard can be deployed easily using Docker or cloud platforms. Since it uses S
     *   `PORT`: 3000
     *   `DB_PATH`: `/app/data/hackathon.db`
 4.  Railway will automatically detect the `Dockerfile` and deploy.
+
+### Option 2: Netlify (Serverless)
+**⚠️ IMPORTANT:** Netlify is a serverless platform. Because it does not have a persistent filesystem, your local SQLite database will be **DELETED** every time the function sleeps or you re-deploy.
+
+*   **Best Use Case**: Use Netlify only for the frontend if you move the backend to Railway/Render.
+*   **To Deploy Anyway**:
+    1.  Ensure you have a `netlify.toml` in your root.
+    2.  Connected your GitHub repo to Netlify.
+    3.  Set `OPENROUTER_API_KEY` in Netlify Environment Variables.
+    4.  **Recommended**: Switch to a cloud database like **Turso** (SQLite compatible) or **Supabase** for persistence.
 
 ### Option 2: Docker
 You can run the entire stack locally or on a VPS using Docker:
