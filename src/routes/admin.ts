@@ -264,6 +264,17 @@ router.post('/hackathons/:id/send-invitations', authMiddleware, async (req: Auth
         }
 
         const emailService = new EmailService();
+
+        // First, verify SMTP config and fail fast with a clear error
+        const smtpOk = await emailService.verifyConnection();
+        if (!smtpOk) {
+            res.status(500).json({
+                success: false,
+                error: `SMTP connection failed. Check your SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS variables in Railway. SMTP_HOST must be 'smtp.gmail.com' (not 'smlp.gmail.com'). SMTP_PORT must be '587'.`
+            });
+            return;
+        }
+
         const submissionUrl = `${config.appUrl}/submit?hackathon=${hackathonId}`;
 
         const result = await emailService.sendInvitations(candidates, {
@@ -282,9 +293,28 @@ router.post('/hackathons/:id/send-invitations', authMiddleware, async (req: Auth
       `).run(uuidv4(), hackathonId, candidate.email, candidate.name);
         }
 
-        res.json({ success: true, data: result });
+        if (result.sent === 0 && result.failed > 0) {
+            res.json({ success: false, error: `All ${result.failed} emails failed. Error: ${result.error || 'Unknown SMTP error. Check server logs.'}` });
+        } else {
+            res.json({ success: true, data: result });
+        }
     } catch (error: any) {
         logger.error(`Invitation error: ${error.message}`);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ─── Test SMTP ─────────────────────────────────────────────────
+router.get('/test-smtp', authMiddleware, async (_req, res) => {
+    try {
+        const emailService = new EmailService();
+        const ok = await emailService.verifyConnection();
+        if (ok) {
+            res.json({ success: true, message: 'SMTP connection verified! Emails will be delivered.' });
+        } else {
+            res.json({ success: false, error: `SMTP connection failed. Config: host=${config.smtp.host}, port=${config.smtp.port}, user=${config.smtp.user}` });
+        }
+    } catch (error: any) {
         res.status(500).json({ success: false, error: error.message });
     }
 });
